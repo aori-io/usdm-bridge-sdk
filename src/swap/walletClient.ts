@@ -17,6 +17,10 @@ export type SwapWalletClient = WalletClient & {
 export async function resolveChainId(
   walletClient: SwapWalletClient,
 ): Promise<number | null> {
+  try {
+    const hex = await (walletClient as any).request({ method: 'eth_chainId' });
+    if (hex) return parseInt(hex as string, 16);
+  } catch { /* fall through */ }
   if (walletClient.chain?.id) return walletClient.chain.id;
   const result = walletClient.getChainId?.();
   if (result != null) return await result;

@@ -110,7 +110,19 @@ export async function pollOrderStatus(
 
         if (response.status === 400) {
           const body = await response.text();
-          if (body.includes('not found') || body.includes('expired')) {
+          // 400 + "expired" is unambiguously terminal — stop on first occurrence.
+          // Only applies to 400 responses; a non-400 status field that mentions
+          // "expired" is a normal status transition and must not be short-circuited.
+          if (body.includes('expired')) {
+            if (timeoutId) clearTimeout(timeoutId);
+            const err = new Error('Order expired or not found');
+            onError?.(err);
+            reject(err);
+            return;
+          }
+          // 400 + "not found" only: transient during the deposit-indexing window.
+          // Retry up to the budget before giving up.
+          if (body.includes('not found')) {
             if (++consecutive400Count >= MAX_CONSECUTIVE_400) {
               if (timeoutId) clearTimeout(timeoutId);
               const err = new Error('Order expired or not found');
