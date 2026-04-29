@@ -1,16 +1,7 @@
 node_modules
 dist
-build
-.next
-out
-coverage
-.turbo
-.cache
 .vite
-
-# Editor / OS noise
-.DS_Store
-*.log
+*.local
 
 # Environment files — never commit secrets.
 # Allow only template files (.env.example, .env.sample).
@@ -18,4 +9,3 @@ coverage
 .env.*
 !.env.example
 !.env.sample
-docs/

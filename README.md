@@ -12,7 +12,11 @@ npm install @aori/usdm-bridge-sdk viem
 bun add @aori/usdm-bridge-sdk viem
 ```
 
-`viem` is a required peer. `ethers` is an optional peer — only needed if you import the ethers adapter.
+`viem` is a required peer **whether or not you use the ethers adapter** — see [Using ethers v6](#using-ethers-v6-as-an-integrator-side-adapter). `ethers` is an optional peer; install it only if you want your application code to construct the wallet client through the ethers adapter:
+
+```bash
+npm install @aori/usdm-bridge-sdk viem ethers
+```
 
 ## Configure
 
@@ -162,7 +166,9 @@ For each step in `quote.userSteps`:
 
 After all steps complete you get back `{ quoteId, signature?, txHashes, isNativeDeposit, depositChainBlockTimeMs }`. If `isNativeDeposit`, wait `2 * depositChainBlockTimeMs` before the first `pollStatus` call (the widget does the same).
 
-## Using ethers v6 instead of viem
+## Using ethers v6 as an integrator-side adapter
+
+If your codebase is already on ethers and you don't want to import viem in your wallet-construction code, the SDK ships a small adapter at `@aori/usdm-bridge-sdk/ethers`:
 
 ```ts
 import { UsdmBridgeSdk } from '@aori/usdm-bridge-sdk';
@@ -171,7 +177,7 @@ import { BrowserProvider } from 'ethers';
 
 const sdk = new UsdmBridgeSdk(usdmBridgeConfig);
 
-const provider = new BrowserProvider(window.ethereum!);
+const provider = new BrowserProvider(window.ethereum!, 'any');
 const signer = await provider.getSigner();
 const walletClient = await ethersSignerToWalletClient(signer);
 
@@ -179,7 +185,26 @@ const quote = await sdk.getQuote(/* ... */);
 await sdk.executeSwap({ quote, walletClient });
 ```
 
-The adapter implements just enough EIP-1193 to bridge `eth_sendTransaction`, `eth_signTypedData_v4`, `eth_chainId`, `eth_accounts`, and `wallet_switchEthereumChain` to the corresponding ethers calls.
+A working end-to-end React example is in [`examples/react-6963-ethers/`](./examples/react-6963-ethers/) — same UI as `react-6963`, but with zero `viem` imports in user code.
+
+### What the adapter actually does (and doesn't)
+
+The adapter is a **compatibility shim**, not a viem replacement. Specifically:
+
+- It wraps your ethers `Signer` in a tiny EIP-1193 transport that translates `eth_sendTransaction`, `eth_signTypedData_v4`, `eth_chainId`, `eth_accounts`, and `wallet_switchEthereumChain` into the corresponding ethers calls. Anything else falls through to `signer.provider.send`.
+- It then calls viem's `createWalletClient({ transport: custom(shim) })` and returns the resulting `WalletClient` (typed as `SwapWalletClient`) for the SDK to consume.
+
+This means:
+
+|                                                          | Reality                                                                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Can my application code be 100% ethers, no viem imports? | ✅ Yes. That's the whole point of the adapter.                                                                                                                                                                                                                                                                      |
+| Does using the adapter remove viem from my bundle?       | ❌ No. The SDK's swap pipeline (`executeSwap`, allowance reads, receipt waits, EIP-712 typed-data canonicalization, ABI codec, the Chainalysis sanctions read) is all viem-based internally, and the adapter itself constructs a viem `WalletClient`. Bundle size is roughly the same as the viem-flavored example. |
+| Is `ethers` a hard runtime dependency?                   | ❌ Optional peer. Don't install it (and don't import from `/ethers`) and the SDK works fine.                                                                                                                                                                                                                        |
+| Is `viem` a hard runtime dependency?                     | ✅ Always. It's the SDK's runtime regardless of which adapter you use.                                                                                                                                                                                                                                              |
+| What changes between viem and ethers integration?        | Only the wallet-construction code in your application. The `sdk.bridge({ quote, walletClient, ... })` call site is byte-for-byte identical.                                                                                                                                                                        |
+
+If you want a truly lib-agnostic core (genuinely no viem in the bundle when using ethers, hard peer-dep guarantees per adapter, separate npm packages), that's a larger architectural change — open an issue to discuss.
 
 ## Status tracking only
 
