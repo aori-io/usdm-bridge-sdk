@@ -1,0 +1,51 @@
+{
+  "name": "@aori/usdm-bridge-sdk",
+  "version": "0.1.0",
+  "description": "Headless TypeScript SDK for the LayerZero VT API powering Aori USDM bridging — quote, swap, and status tracking without UI.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./ethers": {
+      "types": "./dist/ethers.d.ts",
+      "import": "./dist/ethers.js",
+      "require": "./dist/ethers.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "viem": "^2",
+    "ethers": "^6"
+  },
+  "peerDependenciesMeta": {
+    "ethers": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "ethers": "^6",
+    "tsup": "^8.4.0",
+    "typescript": "^5",
+    "viem": "^2"
+  }
+}

@@ -1,0 +1,20 @@
+node_modules
+dist
+build
+.next
+out
+coverage
+.turbo
+.cache
+.vite
+
+# Editor / OS noise
+.DS_Store
+*.log
+
+# Environment files — never commit secrets.
+# Allow only template files (.env.example, .env.sample).
+.env
+.env.*
+!.env.example
+!.env.sample

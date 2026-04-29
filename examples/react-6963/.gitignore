@@ -1,0 +1,11 @@
+node_modules
+dist
+.vite
+*.local
+
+# Environment files — never commit secrets.
+# Allow only template files (.env.example, .env.sample).
+.env
+.env.*
+!.env.example
+!.env.sample
